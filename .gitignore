@@ -1,0 +1,11 @@
+*.DS_Store
+*.pyc
+/server.log
+/docs
+/test.coffee
+/redis/log/*.log
+/redis/data/*.rdb
+/redis/data/*.aof
+/redis/pid/*.pid
+/framework/node_modules
+/app/node_modules

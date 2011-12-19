@@ -1,0 +1,9 @@
+
+DROP TABLE IF EXISTS test_table;
+
+CREATE TABLE test_table (
+  id INTEGER AUTO_INCREMENT NOT NULL,
+  user VARCHAR(255),
+  pass VARCHAR(255),
+  PRIMARY KEY (id)
+);

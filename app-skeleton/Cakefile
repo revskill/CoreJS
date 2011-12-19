@@ -1,0 +1,36 @@
+
+# CoreFramework Cakefile
+# ======================
+
+watchFiles = ['.']
+
+{spawn, exec} = require 'child_process'
+
+logCallback = (data) -> if data? then console.log  data.toString().trim()
+
+getFiles = (callback) ->
+	find = exec 'find . | grep "\\.coffee$"', (error, stdout, stderr) ->
+		unless error then callback.call this, stdout.split('\n')
+		else throw error
+
+	
+task 'build', 'Build project', ->
+	coffee = spawn 'coffee', [ '-b', '-c', watchFiles...]
+	coffee.stdout.on 'data', logCallback
+	
+
+task 'watch', 'Watch Project', ->
+	coffee = spawn 'coffee', [ '-b', '-c', '-w', watchFiles...]
+	coffee.stdout.on 'data', logCallback
+	
+
+task 'clean', 'Clean Project', ->
+	getFiles (data) ->
+		command = ['rm -vf']
+		nodeModules = /\/node_modules\//
+		hidden = /^\.\/\./
+		coffeeFile = /\.coffee$/
+		command.push item.replace(coffeeFile, '.js') for item in data when not nodeModules.test(item) and not hidden.test(item)
+		exec command.join(' '), (err, stdout, stderr) -> if err then throw err else console.log stdout
+	exec "rm -Rf private/tmp/s3/* private/incoming/*"
+		

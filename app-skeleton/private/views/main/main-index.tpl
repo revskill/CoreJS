@@ -1,0 +1,1 @@
+<h1><?= app.config.title ?></h1>

@@ -1,0 +1,67 @@
+#!/usr/bin/env coffee
+
+path = require 'path'
+child_process = require 'child_process'
+fs = require 'fs'
+
+FrameworkDeploy = (src) ->
+
+	if process.argv.length < 3 then console.log "\nPlease specify a name for the application.\n"; process.exit()
+	
+	app = process.argv[2]
+
+	dest = "__tmp/"
+	framework = path.normalize "#{src}/.."
+	project = path.normalize "#{src}/../.."
+	relative = path.relative dest, project
+	
+	commands = "
+mkdir -p #{dest}/#{app}-server/applications #{dest}/applications;
+ln -s #{framework}/bin/server/start.py #{dest}/start;
+ln -s #{framework}/bin/server/status.py #{dest}/status;
+ln -s #{framework}/bin/server/stop.py #{dest}/stop;
+ln -s #{framework}/bin/server/watch.sh #{dest}/watch;
+mkdir -p #{dest}/redis/config #{dest}/redis/data #{dest}/redis/log #{dest}/redis/pid;
+cp #{project}/redis/config/redis.conf #{dest}/redis/config/;
+ln -s #{framework}/bin/redis/start.py #{dest}/redis/start;
+ln -s #{framework}/bin/redis/status.py #{dest}/redis/status;
+ln -s #{framework}/bin/redis/stop.py #{dest}/redis/stop;
+ln -s #{framework}/bin/redis/watch.sh #{dest}/redis/watch;
+cp -Rf #{project}/app-skeleton #{dest}/applications/#{app};
+cp #{project}/production.coffee #{project}/staging.coffee #{dest}/;
+"
+
+	child_process.exec commands, (err, stdout, stderr) ->
+		console.log ''
+		
+		if err then console.log stderr; return
+		
+		# Prepare cakefile
+		cakefile = fs.readFileSync "#{project}/Cakefile", 'utf-8'
+		cakefile = cakefile.replace /\[(.*?)'framework'(.*?)]/, "[$1'#{relative}/framework'#{if app? then ", 'applications/"+app+"'" else ''}]"
+		cakefile = cakefile.replace /(\s+)framework\//g, "$1#{relative}/framework/"
+		fs.writeFileSync "#{dest}/Cakefile", cakefile, 'utf-8'
+
+		# Prepare master
+		for file in ['common', 'master']
+			master = fs.readFileSync "#{project}/#{file}.coffee", 'utf-8'
+			master = master.replace("require './framework'", "require '#{relative}/framework'")
+			master = master.replace ": 'app'", ": 'applications/#{app}'" if app?
+			
+			if file is 'common'
+				master = master.replace /(\s+)user:\s+(\'|")(.*?)(\'|")/, "$1user: 'db_user'"
+				master = master.replace /(\s+)password:\s+(\'|")(.*?)(\'|")/, "$1password: 'db_password'"
+				master = master.replace /(\s+)database:\s+(\'|")(.*?)(\'|")/, "$1database: 'db_name'"
+			
+			fs.writeFileSync "#{dest}/#{file}.coffee", master, 'utf-8'
+
+		console.log "Successfully deployed #{app}-server.tar.gz\n"
+		
+		child_process.exec "cd #{dest}; mv * #{app}-server/; tar cvzf ../#{app}-server.tar.gz #{app}-server/; cd ..; rm -Rf #{dest}" # cleanup
+			
+			
+# Execution context
+
+FrameworkDeploy __dirname
+	
+

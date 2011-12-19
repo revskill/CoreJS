@@ -1,0 +1,13 @@
+{
+	"name"				: "Application",
+	"description"		: "Sample Application",
+	"version"			: "0.0.1",
+	"homepage"			: "",
+	"repository"		: "",
+	"author"			: "",
+	"main"				: "app",
+	"engines"			: { "node": ">= 0.6.0" },
+	"dependencies"		: {
+
+	}
+}

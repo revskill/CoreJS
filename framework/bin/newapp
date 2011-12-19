@@ -1,0 +1,31 @@
+#!/usr/bin/env coffee
+
+path = require 'path'
+child_process = require 'child_process'
+
+NewApp = (src) ->
+	
+	if process.argv.length < 3 then console.log "\nPlease specify a name for the application.\n"; process.exit()
+	
+	app = process.argv[2]
+	
+	framework = path.normalize "#{src}/.."
+	project = path.normalize "#{src}/../.."
+	cwd = process.cwd()
+	
+	command = "
+mkdir -p __tmp/#{app};
+cp -Rf #{project}/app-skeleton/* __tmp/#{app};
+cd __tmp;
+tar -cvzf ../#{app}-app.tar.gz #{app};
+cd ../;
+rm -Rf __tmp;
+"
+	child_process.exec command, (err, stdout, stderr) ->
+		
+		if err then console.log stderr; return
+		
+		console.log "\nSuccessfully created '#{app}-app.tar.gz'\n"
+	
+	
+NewApp __dirname
